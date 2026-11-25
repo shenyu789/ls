@@ -6,3 +6,7 @@
 
 # 编辑器
 .vscode/
+
+# 演示用的测试临时文件
+/shortcut
+/a.txt
