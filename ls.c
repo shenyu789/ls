@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <grp.h>
+#include <time.h>
 
 void get_permissions(mode_t mode, char permissions[]) {
     permissions[0] = (mode & S_IRUSR) ? 'r' : '-';
@@ -89,31 +90,38 @@ int main(int argc, char* argv[]) {
         if (show_all == 0 && entry->d_name[0] == '.') {
             continue;
         }
-
-        // 第二层：判断是否使用详细输出
-        if (show_long == 0) {
-            printf("%s\n", entry->d_name);
-        } else {
-            struct stat file_stat;
-            char permissions[10];
-
+        struct stat file_stat;
+        if(show_inode || show_long){
             if (lstat(entry->d_name, &file_stat) == -1) {
                 perror(entry->d_name);
                 printf("%s\n", entry->d_name);
                 continue;
             }
+        }
+        if(show_inode == 1){
+            printf("%lu ", (unsigned long)file_stat.st_ino);
+        }
+        // 第二层：判断是否使用详细输出
+        if (show_long == 0) {
+            printf("%s\n", entry->d_name);
+        } else {
+            char permissions[10];
+            struct tm* time_info = localtime(&file_stat.st_mtime);
+
+            char time_str[20];
+
+            strftime(time_str, sizeof(time_str), "%b %d %H:%M", time_info);
             char type = get_file_type(file_stat.st_mode);
             get_permissions(file_stat.st_mode, permissions);
 
-            printf("%c%s %lu %s\n", type, permissions,
-                   (unsigned long)file_stat.st_nlink, entry->d_name);
             struct passwd* user = getpwuid(file_stat.st_uid);
             struct group* group = getgrgid(file_stat.st_gid);
 
-            if (user != NULL && group != NULL) {
-                printf("用户名：%s\n", user->pw_name);
-                printf("组名：%s\n", group->gr_name);
-            }
+            const char* username = user ? user->pw_name : "unknown";
+            const char* groupname = group ? group->gr_name : "unknown";
+            printf("%c%s %lu %s %s %lld %s %s\n", type, permissions,
+                   (unsigned long)file_stat.st_nlink, username, groupname,
+                   (long long)file_stat.st_size, time_str, entry->d_name);
         }
     }
     // 关闭目录
