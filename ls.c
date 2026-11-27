@@ -136,6 +136,11 @@ int main(int argc, char* argv[]) {
         count++;
     }
     printf("一共读取了 %d 个文件\n", count);
+    if (sort_time == 1) {
+        qsort(files, count, sizeof(struct FileInfo), compare_time);
+    } else {
+        qsort(files, count, sizeof(struct FileInfo), compare_name);
+    }
     // 第三阶段：打印文件信息
     if (reverse == 1) {
         for (int i = count - 1; i >= 0; i--) {
